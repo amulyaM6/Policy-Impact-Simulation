@@ -1,0 +1,198 @@
+@import "tailwindcss";
+
+/*
+  PolicySim design tokens
+  Light stone canvas, near-black ink, one signal red.
+  Red is reserved for actions and for things that need attention.
+*/
+
+:root {
+  --canvas: #ecebe9;
+  --surface: #ffffff;
+  --ink: #1f1a1a;
+  --ink-soft: #5c5653;
+  --line: rgba(31, 26, 26, 0.08);
+  --signal: #de4540;
+  --radius-card: 28px;
+  --radius-control: 14px;
+}
+
+@theme inline {
+  --color-background: var(--canvas);
+  --color-foreground: var(--ink);
+  --font-sans: var(--font-grotesk), system-ui, -apple-system, sans-serif;
+
+  /* Signal red: the only accent colour */
+  --color-brand-50: #fdf1f0;
+  --color-brand-100: #fbe1df;
+  --color-brand-200: #f6c2be;
+  --color-brand-300: #ee9993;
+  --color-brand-400: #e66a63;
+  --color-brand-500: #de4540;
+  --color-brand-600: #cc3530;
+  --color-brand-700: #a82a26;
+  --color-brand-800: #87231f;
+  --color-brand-900: #6b1d1a;
+  --color-brand-950: #3b0e0c;
+
+  /* Warm stone neutrals (replaces Tailwind's blue-tinted slate) */
+  --color-slate-50: #f6f5f4;
+  --color-slate-100: #efedeb;
+  --color-slate-200: #e2dfdc;
+  --color-slate-300: #cbc7c3;
+  --color-slate-400: #9d9793;
+  --color-slate-500: #77716d;
+  --color-slate-600: #5c5653;
+  --color-slate-700: #45403e;
+  --color-slate-800: #2e2928;
+  --color-slate-900: #1f1a1a;
+  --color-slate-950: #120e0e;
+
+  /* Status colours, muted so they sit with the palette */
+  --color-emerald-50: #eef6f1;
+  --color-emerald-100: #d6ebdf;
+  --color-emerald-200: #b3d8c2;
+  --color-emerald-500: #2f8f5b;
+  --color-emerald-600: #24774a;
+  --color-emerald-700: #1d5f3b;
+  --color-amber-50: #fbf4e8;
+  --color-amber-100: #f5e5c6;
+  --color-amber-200: #ecd09a;
+  --color-amber-500: #c98a1c;
+  --color-amber-600: #a87015;
+  --color-amber-700: #855812;
+}
+
+html {
+  background: var(--canvas);
+}
+
+body {
+  background-color: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+::selection {
+  background: var(--color-brand-100);
+  color: var(--ink);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbc7c3; border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #9d9793; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+/*
+  Surfaces. These are unlayered on purpose so they win over the
+  rounded-* / shadow-* utilities still present in older components.
+*/
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: 0 1px 2px rgba(31, 26, 26, 0.04), 0 24px 48px -28px rgba(31, 26, 26, 0.18);
+}
+
+.card-glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 22px;
+  box-shadow: 0 30px 60px -30px rgba(31, 26, 26, 0.35);
+}
+
+/* Display type: big, tight, inked from near-black down to stone */
+.display {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: -0.035em;
+  line-height: 0.92;
+  background: linear-gradient(180deg, #1f1a1a 0%, #4a4342 55%, #8a8380 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  height: 3rem;
+  padding: 0 1.4rem;
+  border-radius: var(--radius-control);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+  white-space: nowrap;
+}
+.btn-signal { background: var(--signal); color: #fff; box-shadow: 0 10px 24px -12px rgba(222, 69, 64, 0.8); }
+.btn-signal:hover { background: var(--color-brand-600); }
+.btn-ink { background: var(--ink); color: #fff; }
+.btn-ink:hover { background: #3a3434; }
+.btn-plain { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+.btn-plain:hover { background: #f6f5f4; }
+
+.icon-round {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  transition: background-color 160ms ease, color 160ms ease;
+}
+.icon-round:hover { background: var(--ink); color: #fff; }
+
+/* Legacy helpers kept so older components still render, now neutral */
+.hud-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.hud-panel-glow { transition: border-color 160ms ease; }
+.hud-panel-glow:hover { border-color: rgba(31, 26, 26, 0.16); }
+.bg-grid-cyber { background-image: none; }
+.scanline-overlay { display: none; }
+.neon-laser-card { border-radius: var(--radius-card); background: var(--line); padding: 1px; }
+.neon-laser-inner { border-radius: calc(var(--radius-card) - 1px); background: var(--surface); height: 100%; width: 100%; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.animate-float { animation: float 7s ease-in-out infinite; }
+.rise { animation: rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.rise-late { animation-duration: 1.1s; animation-delay: 0.15s; }
+.fade-in { animation: fade-in 0.5s ease both; }
+.draw-in { stroke-dasharray: 1; animation: draw-in 0.9s ease-out both; }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes draw-in { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+
+.animate-pulse-glow, .animate-radar, .animate-text-glow, .animate-shimmer, .animate-scanline { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
