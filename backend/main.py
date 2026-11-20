@@ -17,6 +17,7 @@ from simulation import simulate_timeline
 from monte_carlo import run_monte_carlo
 from monte_carlo_api import router as monte_carlo_router
 from risk_ensemble import rate_risk_dimensions
+from concurrent.futures import ThreadPoolExecutor
 from impact_scoring import (
     aggregate_sectors, aggregate_stakeholders, aggregate_scope,
     score_states, summarise_method,
@@ -41,20 +42,24 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 def _groq_create(retries: int = 3, **kwargs):
     """Wraps client.chat.completions.create with automatic retry on Groq's
-    429 (rate limit) response. Groq's free tier caps tokens-per-minute, and
-    this app sometimes makes 2 calls back-to-back (classifier + analysis)
-    that together can briefly exceed it. Groq's error message includes the
-    exact wait time needed, so we back off a little longer than that and
-    try again rather than failing the whole upload."""
+    429 (rate limit) response, and asks gpt-oss models for LOW reasoning
+    effort (much faster; these are rubric/extraction tasks). If a model or
+    SDK version rejects `reasoning_effort`, it is dropped and the call is
+    retried without it."""
     last_error = None
+    if "gpt-oss" in str(kwargs.get("model", "")):
+        kwargs.setdefault("reasoning_effort", "low")
     for attempt in range(retries):
         try:
             return client.chat.completions.create(**kwargs)
         except Exception as e:
             msg = str(e)
+            if "reasoning_effort" in msg and "reasoning_effort" in kwargs:
+                kwargs.pop("reasoning_effort")   # not accepted: retry without it
+                continue
             if "rate_limit_exceeded" in msg or "429" in msg:
                 last_error = e
-                time.sleep(1.5 * (attempt + 1))  # 1.5s, 3s, 4.5s backoff
+                time.sleep(1.0 * (attempt + 1))  # 1s, 2s, 3s backoff
                 continue
             raise
     raise last_error
@@ -218,8 +223,8 @@ async def read_policy_text(file: UploadFile) -> str:
 
 def ensure_government_policy(text: str) -> None:
     check_response = _groq_create(
-        model="openai/gpt-oss-120b",
-        max_tokens=10,
+        model="openai/gpt-oss-20b",
+        max_tokens=300,
         messages=[
             {"role": "system", "content": "You are a document classifier. Reply with only 'yes' or 'no'."},
             {
@@ -334,8 +339,13 @@ REFERENCE DATA (real, for background only):
 async def upload_policy(file: UploadFile = File(...)):
     try:
         text = await read_policy_text(file)
-        ensure_government_policy(text)
-        return analyse_policy(text)
+        # The "is this a policy?" check runs at the same time as the analysis
+        # instead of before it; if the check says no, the result is discarded.
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            check = pool.submit(ensure_government_policy, text)
+            result = analyse_policy(text)
+            check.result()          # raises PolicyInputError if it's not a policy
+        return result
     except PolicyInputError as e:
         return {"error": str(e)}
     except Exception as e:
@@ -360,8 +370,9 @@ async def compare_policies(
     try:
         text1 = await read_policy_text(file1)
         text2 = await read_policy_text(file2)
-        ensure_government_policy(text1)
-        ensure_government_policy(text2)
+        with ThreadPoolExecutor(max_workers=2) as pool:   # both checks at once
+            for f in [pool.submit(ensure_government_policy, t) for t in (text1, text2)]:
+                f.result()
 
         result1 = analyse_policy(text1, with_monte_carlo=False)
         result2 = analyse_policy(text2, with_monte_carlo=False)

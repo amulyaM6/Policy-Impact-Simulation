@@ -100,7 +100,7 @@ def test_sector_scores_are_median_signed_impact():
     agri = next(s for s in sectors if s["name"] == "Agriculture")
     assert agri["signed_impact"] == 60 and agri["score"] == 60 and agri["sentiment"] == "positive"
     assert agri["spread"] == 40 and agri["confidence"] == "low"          # raters disagree
-    assert next(s for s in sectors if s["name"] == "Education")["sentiment"] == "neutral"  # |-5| < 15
+    assert next(s for s in sectors if s["name"] == "Education")["sentiment"] == "neutral"  # |-5| <= 10
 
 
 def test_negative_impact_gives_negative_sentiment_with_positive_strength():
@@ -206,7 +206,7 @@ def _fake_result(title, risk_dims, agri, health, states=None):
     for n in sd.SECTORS:
         v = {"Agriculture": agri, "Healthcare": health}.get(n, 0)
         sectors.append({"name": n, "score": abs(v), "signed_impact": v,
-                        "sentiment": "positive" if v >= 15 else "negative" if v <= -15 else "neutral",
+                        "sentiment": "positive" if v > 10 else "negative" if v < -10 else "neutral",
                         "reason": f"{title} {n}", "confidence": "high", "evidence": "q"})
     return {"policy_title": title, "overall_risk_score": risk["overall_risk_score"], "risk_level": risk["risk_level"],
             "risk_dimensions": risk["dimensions"], "risk_confidence": "high", "sectors": sectors,

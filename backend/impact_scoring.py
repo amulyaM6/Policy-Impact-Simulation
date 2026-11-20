@@ -29,7 +29,7 @@ import statistics
 from state_data import SECTORS, canon, load_baselines, vulnerability
 from simulation import _agent_adaptability
 
-NEUTRAL_BAND = 15          # |impact| below this is reported as "neutral"
+NEUTRAL_BAND = 10          # |impact| below this is reported as "neutral"
 ADAPT_DISCOUNT = 0.5       # how much adaptability lowers a group's severity
 HIGH_AT, MEDIUM_AT = 60, 35
 OUT_OF_SCOPE_FACTOR = 0.25  # state not named by a state-specific policy
@@ -84,7 +84,7 @@ def aggregate_sectors(rater_extras: list) -> list:
         spread = max(scores) - min(scores)
         verified = sum(1 for r in ratings if r["evidence_verified"] is True)
         pick = _closest_reason(ratings, med)
-        sentiment = "neutral" if abs(med) < NEUTRAL_BAND else ("positive" if med > 0 else "negative")
+        sentiment = sentiment = "neutral" if abs(med) <= NEUTRAL_BAND else ("positive" if med > 0 else "negative")
         out.append({
             "name": sector,
             "score": int(round(abs(med))),

@@ -179,7 +179,7 @@ def _call_one_rater(model, temperature, prompt, create_fn, source_words, source_
         resp = create_fn(
             model=model,
             temperature=temperature,
-            max_tokens=6000,  # reasoning models spend tokens thinking first; the reply also carries sector/stakeholder ratings
+            max_tokens=4500,  # reasoning models spend tokens thinking first; the reply also carries sector/stakeholder ratings
             messages=[
                 {"role": "system", "content": SYSTEM_MSG},
                 {"role": "user", "content": attempt_prompt},
