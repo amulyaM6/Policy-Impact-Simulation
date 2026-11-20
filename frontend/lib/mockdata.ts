@@ -24,12 +24,12 @@ export const mockData: SimulationResult = {
     'Digital Access Index': 0.08
   },
   xgboost_prediction: 68,
-  sectors: [
-    { name: 'Agriculture', score: 88, sentiment: 'positive', data_grounded: true },
-    { name: 'Economy', score: 65, sentiment: 'neutral', data_grounded: true },
-    { name: 'Healthcare', score: 30, sentiment: 'neutral', data_grounded: true },
-    { name: 'Education', score: 45, sentiment: 'neutral', data_grounded: true },
-    { name: 'Infrastructure', score: 60, sentiment: 'negative', data_grounded: true },
+    sectors: [
+    { name: 'Agriculture', score: 88, signed_impact: 88, sentiment: 'positive', data_grounded: true },
+    { name: 'Economy', score: 45, signed_impact: 45, sentiment: 'positive', data_grounded: true },
+    { name: 'Healthcare', score: 6, signed_impact: 6, sentiment: 'neutral', data_grounded: true },
+    { name: 'Education', score: 22, signed_impact: 22, sentiment: 'positive', data_grounded: true },
+    { name: 'Infrastructure', score: 60, signed_impact: -60, sentiment: 'negative', data_grounded: true },
   ],
   states: [
     { state: 'Uttar Pradesh', impact_score: 86 },

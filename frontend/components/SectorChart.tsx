@@ -1,41 +1,55 @@
 'use client'
 
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts'
 import { motion } from 'framer-motion'
 import { SectorScore } from '@/lib/types'
 import { BarChart3, CheckCircle2, AlertCircle } from 'lucide-react'
 
 export default function SectorChart({ sectors }: { sectors: SectorScore[] }) {
-  const colors: Record<string, { bar: string; text: string }> = {
-    positive: { bar: '#2f8f5b', text: 'text-emerald-600' },
-    neutral: { bar: '#c98a1c', text: 'text-amber-600' },
-    negative: { bar: '#de4540', text: 'text-brand-600' },
-  }
+  // green = helps, red = harms, grey = negligible, light grey = not rated
+  const BAR = { positive: '#2f8f5b', negative: '#de4540', neutral: '#94a3b8', unrated: '#d6d3d1' }
+
+  // Signed value drives the bar: negative goes left, positive goes right.
+  // Old results / demo data without signed_impact are rebuilt from sentiment.
+  const rows = sectors.map((s) => {
+    const unrated = s.method === 'unavailable'
+    const signed = unrated
+      ? 0
+      : s.signed_impact ?? (s.sentiment === 'negative' ? -s.score : s.score)
+    const kind = unrated ? 'unrated' : s.sentiment === 'positive' || s.sentiment === 'negative' ? s.sentiment : 'neutral'
+    return { ...s, signed, kind }
+  })
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload
       const grounded = data.data_grounded
+      const signed: number = data.signed
+      const unrated = data.kind === 'unrated'
 
       return (
         <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-xl rounded-xl p-3.5 text-xs max-w-xs space-y-1.5">
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-1.5">
             <span className="font-bold text-slate-900 text-sm">{data.name}</span>
             <span className={`capitalize font-bold px-2 py-0.5 rounded-full text-[10px] ${
-              data.sentiment === 'positive' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-              data.sentiment === 'negative' ? 'bg-brand-50 text-brand-700 border border-brand-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+              data.kind === 'positive' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+              data.kind === 'negative' ? 'bg-brand-50 text-brand-700 border border-brand-200' : 'bg-slate-100 text-slate-600 border border-slate-200'
             }`}>
-              {data.sentiment}
+              {unrated ? 'not rated' : data.kind}
             </span>
           </div>
           <div className="flex justify-between items-center text-slate-600">
-            <span>Impact Score:</span>
-            <span className="font-semibold text-slate-900 text-sm">{data.score}/100</span>
+            <span>Net impact:</span>
+            <span className="font-semibold text-slate-900 text-sm">
+              {unrated ? '–' : `${signed > 0 ? '+' : ''}${signed}`} <span className="text-slate-400 font-normal">(-100 to +100)</span>
+            </span>
           </div>
           {grounded !== undefined && (
             <div className={`flex items-center gap-1.5 text-[11px] pt-1 font-medium ${grounded ? 'text-emerald-700' : 'text-amber-700'}`}>
               {grounded ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> : <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
-              <span>{grounded ? 'Grounded with Government Datasets' : 'AI Synthetic Estimation'}</span>
+              <span>{grounded
+                  ? data.state_data_basis === 'proxy' ? 'National dataset only (state split is a proxy)' : 'Grounded with Government Datasets'
+                  : 'AI Synthetic Estimation'}</span>
             </div>
           )}
         </div>
@@ -63,19 +77,22 @@ export default function SectorChart({ sectors }: { sectors: SectorScore[] }) {
         </div>
         <div className="flex items-center gap-3 text-[11px] font-bold">
           <span className="flex items-center gap-1 text-emerald-700"><span className="w-2 h-2 rounded-full bg-emerald-500" />Positive</span>
-          <span className="flex items-center gap-1 text-amber-700"><span className="w-2 h-2 rounded-full bg-amber-500" />Neutral</span>
+          <span className="flex items-center gap-1 text-slate-600"><span className="w-2 h-2 rounded-full bg-slate-400" />Neutral</span>
           <span className="flex items-center gap-1 text-brand-700"><span className="w-2 h-2 rounded-full bg-brand-500" />Negative</span>
         </div>
       </div>
 
       <ResponsiveContainer width="100%" height={210}>
-        <BarChart data={sectors} layout="vertical" margin={{ left: 5, right: 20, top: 5, bottom: 5 }}>
-          <XAxis type="number" domain={[0, 100]} tick={{ fill: '#9d9793', fontSize: 11, fontWeight: 600 }} axisLine={false} tickLine={false} />
+        <BarChart data={rows} layout="vertical" margin={{ left: 5, right: 20, top: 5, bottom: 5 }}>
+          <XAxis type="number" domain={[-100, 100]} ticks={[-100, -50, 0, 50, 100]}
+            tickFormatter={(v: number) => (v > 0 ? `+${v}` : `${v}`)}
+            tick={{ fill: '#9d9793', fontSize: 11, fontWeight: 600 }} axisLine={false} tickLine={false} />
           <YAxis type="category" dataKey="name" width={110} tick={{ fill: '#2e2928', fontSize: 12, fontWeight: 700 }} axisLine={false} tickLine={false} />
           <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(222, 69, 64, 0.04)', rx: 8 }} />
-          <Bar dataKey="score" radius={[0, 8, 8, 0]} maxBarSize={22}>
-            {sectors.map((s, i) => (
-              <Cell key={i} fill={colors[s.sentiment]?.bar || '#de4540'} />
+          <ReferenceLine x={0} stroke="#cfc9c6" />
+          <Bar dataKey="signed" radius={4} maxBarSize={22} minPointSize={2}>
+            {rows.map((s, i) => (
+              <Cell key={i} fill={BAR[s.kind as keyof typeof BAR]} />
             ))}
           </Bar>
         </BarChart>

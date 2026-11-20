@@ -26,7 +26,7 @@ export default function UploadPage() {
     // Show warning after 15 seconds
     const warningTimer = setTimeout(() => {
       setTimeoutWarning(true)
-    }, 15000)
+    }, 45000)
 
     // Cancel everything after 60 seconds
     const controller = new AbortController()
@@ -102,7 +102,7 @@ export default function UploadPage() {
             </div>
             {timeoutWarning && (
               <p className="mt-6 text-sm text-amber-700 bg-amber-50 rounded-xl px-4 py-3">
-                This document is taking longer than usual. Keep this page open; it will stop after 60 seconds.
+                This document is taking longer than usual. Keep this page open; it will stop after 3 minutes.
               </p>
             )}
           </div>

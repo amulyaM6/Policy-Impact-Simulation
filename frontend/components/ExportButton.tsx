@@ -71,26 +71,15 @@ export default function ExportButton({ data }: { data: SimulationResult }) {
         y += 8
 
         data.sectors.forEach((s) => {
-          const barColor = s.sentiment === 'positive'
-            ? [34, 197, 94]
+          const unrated = s.method === 'unavailable'
+          const barColor = unrated
+            ? [214, 211, 209]
+            : s.sentiment === 'positive'
+            ? [47, 143, 91]
             : s.sentiment === 'negative'
-            ? [239, 68, 68]
-            : [234, 179, 8]
-
-          doc.setFontSize(10)
-          doc.setFont('helvetica', 'normal')
-          doc.setTextColor(50, 50, 50)
-          doc.text(s.name, 14, y)
-
-          doc.setFillColor(220, 220, 220)
-          doc.roundedRect(60, y - 5, 80, 7, 2, 2, 'F')
-
-          doc.setFillColor(barColor[0], barColor[1], barColor[2])
-          doc.roundedRect(60, y - 5, (80 * s.score) / 100, 7, 2, 2, 'F')
-
-          doc.setTextColor(50, 50, 50)
-          doc.text(`${s.score}/100`, 148, y)
-          y += 12
+            ? [222, 69, 64]
+            : [148, 163, 184]
+          const signed = s.signed_impact ?? (s.sentiment === 'negative' ? -s.score : s.score)
         })
 
         y += 5

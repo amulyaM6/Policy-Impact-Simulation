@@ -24,6 +24,7 @@ type TabId = 'overview' | 'sectors' | 'regional' | 'timeline' | 'recommendations
 export default function Dashboard() {
   const [data, setData] = useState<SimulationResult>(mockData)
   const [isReal, setIsReal] = useState(false)
+  const [ready, setReady] = useState(false)
   const [activeTab, setActiveTab] = useState<TabId>('overview')
   const [searchQuery, setSearchQuery] = useState('')
   const [mcError, setMcError] = useState(false)
@@ -39,13 +40,14 @@ export default function Dashboard() {
         console.error('Failed to parse simulationResult from localStorage:', err)
       }
     }
+    setReady(true)
   }, [])
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Older stored results (and the demo data) have no Monte Carlo block, so
   // request one from the backend. On failure a notice is shown instead.
   useEffect(() => {
-    if (data.monte_carlo || !data.risk_dimensions) return
+    if (!ready || data.monte_carlo || !data.risk_dimensions) return
     let cancelled = false
     runMonteCarlo(data.risk_dimensions, data.stakeholders)
       .then((mc) => {
@@ -57,7 +59,7 @@ export default function Dashboard() {
     return () => {
       cancelled = true
     }
-  }, [data.monte_carlo, data.risk_dimensions, data.stakeholders])
+  }, [ready, data.monte_carlo, data.risk_dimensions, data.stakeholders])
 
   const rerunMonteCarlo = async (nTrials: number) => {
     if (!data.risk_dimensions) return
@@ -90,6 +92,15 @@ export default function Dashboard() {
 
   const scoreTone = (score: number) =>
     score > 70 ? { bar: 'bg-brand-500', text: 'text-brand-700' } : score > 40 ? { bar: 'bg-brand-300', text: 'text-slate-900' } : { bar: 'bg-slate-300', text: 'text-slate-600' }
+
+  // Don't flash the demo data while the real result is being read from storage
+  if (!ready) {
+    return (
+      <div className="max-w-[1320px] mx-auto px-5 lg:px-10 pt-10 text-sm text-slate-500">
+        Loading your results…
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-[1320px] mx-auto px-5 lg:px-10 pt-6 pb-20 space-y-8">
