@@ -28,6 +28,9 @@ const clean = (v: unknown): string =>
     .replace(/[–—]/g, '-')
     .replace(/…/g, '...')
     .replace(/₹/g, 'Rs.')
+    .replace(/[\u2010-\u2012\u2015\u2212]/g, '-')   // non-breaking / figure hyphens and minus sign (the AI uses these)
+    .replace(/[\u2007-\u200A\u202F]/g, ' ')          // thin / figure spaces
+    .replace(/[\u00AD\u200B-\u200D\uFEFF]/g, '')     // soft hyphen and zero-width characters
     .replace(/[^\x00-\xFF]/g, '')
 
 const riskColor = (score: number): RGB => (score >= 70 ? RED : score >= 40 ? AMBER : GREEN)
@@ -248,7 +251,11 @@ function buildPdf(data: SimulationResult): jsPDF {
       d.ratings.forEach((r) => {
         paragraph(`${r.model} - ${r.score}: ${r.reason}`, { size: 8.5, indent: 2, gap: 0.5 })
         if (r.evidence) {
-          paragraph(`"${r.evidence}"${r.evidence_verified ? '  [verified in policy text]' : ''}`, { size: 8, c: MUTED, indent: 5, gap: 1.5 })
+          const noEvidence = r.evidence.trim().toUpperCase() === 'NO_DIRECT_EVIDENCE'
+          const quote = r.evidence.trim().replace(/^["'“”‘’]+|["'“”‘’]+$/g, '')   // the model sometimes adds its own quote marks
+          const tag = r.evidence_verified === true ? '  [verified in policy text]'
+            : r.evidence_verified === false ? '  [NOT found in policy text]' : ''
+          paragraph(noEvidence ? '(no direct evidence cited; score is an inference)' : `"${quote}"${tag}`, { size: 8, c: MUTED, indent: 5, gap: 1.5 })
         }
       })
       y += 1
@@ -260,7 +267,7 @@ function buildPdf(data: SimulationResult): jsPDF {
   data.sectors.forEach((s) => {
     const unrated = s.method === 'unavailable'
     const signed = s.signed_impact ?? (s.sentiment === 'negative' ? -s.score : s.score)
-    const c = unrated ? GREY : s.sentiment === 'positive' ? GREEN : s.sentiment === 'negative' ? RED : GREY
+    const c = unrated ? GREY : s.sentiment === 'positive' ? GREEN : s.sentiment === 'negative' ? RED : AMBER
     const valueText = unrated ? 'not rated' : `${signed > 0 ? '+' : ''}${signed} (${s.sentiment})`
     barRow(s.name, valueText, unrated ? 0 : s.score, c, s.reason)
   })
@@ -336,7 +343,7 @@ function buildPdf(data: SimulationResult): jsPDF {
     if (mc.sensitivity?.length) {
       subheading('What drives the uncertainty')
       mc.sensitivity.slice(0, 6).forEach((s) =>
-        barRow(s.input.replace(/[_:]/g, ' '), s.correlation.toFixed(2), Math.abs(s.correlation) * 100, s.correlation >= 0 ? RED : GREEN),
+        barRow(s.input.replace(/^risk_dim:/, 'risk: ').replace(/^model:/, 'model: ').replace(/_/g, ' '), s.correlation.toFixed(2), Math.abs(s.correlation) * 100, s.correlation >= 0 ? RED : GREEN),
       )
     }
     paragraph(
